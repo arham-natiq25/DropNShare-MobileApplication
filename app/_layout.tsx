@@ -1,25 +1,50 @@
-import "./global.css";
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+/**
+ * Root Layout - ThemeProvider, Splash screen, Stack navigation
+ * Wraps the entire app with theme context and sets up routes
+ */
+
+import './global.css';
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import * as SplashScreen from 'expo-splash-screen';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+// Keep splash visible until app is ready
+SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+function RootLayoutNav() {
+  const { resolvedTheme } = useTheme();
+
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+    <>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { flex: 1 },
+        }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen
+          name="(auth)"
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
+    </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootLayoutNav />
     </ThemeProvider>
   );
 }
