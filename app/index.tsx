@@ -76,7 +76,7 @@ export default function LandingPage() {
                 lineHeight: 44,
                 marginBottom: 16,
               }}>
-              Drop files. Share a link.{' '}
+              Drop files.{'\n'}Share a link.{' '}
               <Text style={{ color: GRADIENT_COLORS.start }}>Done.</Text>
             </Text>
 
@@ -91,16 +91,17 @@ export default function LandingPage() {
               instantly. Designed for speed and a great user experience.
             </Text>
 
-            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 32 }}>
+            <View style={{ marginBottom: 11 }}>
               <GradientButton
                 title="Start uploading"
                 icon="cloud-upload"
                 iconPosition="left"
                 onPress={() => {}}
               />
-              <GradientButton
+            </View>
+            <View style={{ flexDirection: 'column', marginBottom: 32 }}>
+            <GradientButton
                 title="Create account"
-                variant="outline"
                 onPress={() => router.push('/(auth)/signup')}
               />
             </View>
@@ -124,6 +125,10 @@ export default function LandingPage() {
               />
             </View>
           </View>
+          <View style={{ flexDirection: 'column' , width: '100%' , borderRadius: 12}}>
+          <GradientButton title="Try now"  onPress={() => {}} />
+
+          </View>
 
           {/* Right Column - Process Card */}
           <View style={{ flex: 1, minWidth: 280 }}>
@@ -134,12 +139,14 @@ export default function LandingPage() {
         {/* Footer */}
         <View
           style={{
+            marginTop: 100,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingTop: 32,
             borderTopWidth: 1,
             borderTopColor: colors.cardBorder,
+            paddingHorizontal: 12,
           }}>
           <Text
             style={{

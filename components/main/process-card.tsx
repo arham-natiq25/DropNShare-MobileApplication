@@ -86,7 +86,6 @@ export function ProcessCard() {
             </Text>
           </View>
         </View>
-        <GradientButton title="Try now" variant="outline" onPress={() => {}} />
       </View>
 
       {STEPS.map((step, index) => (
