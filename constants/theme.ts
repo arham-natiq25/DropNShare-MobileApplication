@@ -9,6 +9,7 @@ import { Platform } from 'react-native';
 export const GRADIENT_COLORS = {
   start: '#A78BFA', // Purple
   end: '#6366F1',   // Indigo/Blue
+  glow: '#8B5CF6',  // Glow accent
 } as const;
 
 export const Colors = {

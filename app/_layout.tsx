@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 // Keep splash visible until app is ready
 SplashScreen.preventAutoHideAsync();
@@ -30,6 +31,10 @@ function RootLayoutNav() {
         }}>
         <Stack.Screen name="index" />
         <Stack.Screen
+          name="upload"
+          options={{ animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
           name="(auth)"
           options={{
             animation: 'slide_from_right',
@@ -44,7 +49,9 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <RootLayoutNav />
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

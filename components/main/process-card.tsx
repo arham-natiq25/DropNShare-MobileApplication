@@ -1,15 +1,19 @@
 /**
- * ProcessCard - Large card showing Share safely + Upload, Zip, Share steps
+ * ProcessCard - Card showing Share safely + Upload, Zip, Share steps
  */
 
-import { View, Text, Pressable } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Text, View } from 'react-native';
 
-import { GradientButton } from '@/components/ui/gradient-button';
-import { useThemeColors } from '@/hooks/use-theme-colors';
 import { GRADIENT_COLORS } from '@/constants/theme';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 
 const STEPS = [
+  {
+    icon: 'verified' as const,
+    title: 'Share safely',
+    description: 'We use end-to-end encryption to protect your files.',
+  },
   {
     icon: 'upload' as const,
     title: 'Upload',
@@ -33,9 +37,10 @@ export function ProcessCard() {
   return (
     <View
       style={{
-        flex: 1,
-        padding: 24,
-        borderRadius: 16,
+        paddingTop: 20,
+        paddingBottom: 30,
+        paddingHorizontal: 20,
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: colors.cardBorder,
         backgroundColor: colors.card,
@@ -45,48 +50,7 @@ export function ProcessCard() {
         shadowRadius: 12,
         elevation: 4,
       }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 24,
-        }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: `${GRADIENT_COLORS.start}20`,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <MaterialIcons
-              name="verified"
-              size={22}
-              color={GRADIENT_COLORS.start}
-            />
-          </View>
-          <View>
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: '700',
-                color: colors.text,
-              }}>
-              Share safely
-            </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                color: colors.textSecondary,
-              }}>
-              Simple, predictable flow.
-            </Text>
-          </View>
-        </View>
-      </View>
+     
 
       {STEPS.map((step, index) => (
         <View key={step.title}>
@@ -95,20 +59,20 @@ export function ProcessCard() {
               style={{
                 height: 1,
                 backgroundColor: colors.cardBorder,
-                marginVertical: 16,
+                marginVertical: 12,
               }}
             />
           )}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
             <MaterialIcons
               name={step.icon}
-              size={24}
+              size={22}
               color={GRADIENT_COLORS.start}
             />
             <View style={{ flex: 1 }}>
               <Text
                 style={{
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: '600',
                   color: colors.text,
                 }}>
@@ -116,7 +80,7 @@ export function ProcessCard() {
               </Text>
               <Text
                 style={{
-                  fontSize: 14,
+                  fontSize: 13,
                   color: colors.textSecondary,
                 }}>
                 {step.description}

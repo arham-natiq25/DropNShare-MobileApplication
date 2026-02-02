@@ -1,25 +1,69 @@
 /**
- * Signup Screen - Design only (no auth logic yet)
- * "Create your account" form with Full name, Email, Password, Confirm, Create account button
+ * Signup Screen - API-integrated. Uses uncontrolled inputs (refs) so keyboard stays open on mobile.
  */
 
+import { useRef, useState } from 'react';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 
 import { AuthCard } from '@/components/auth/auth-card';
 import { AuthHeader } from '@/components/auth/auth-header';
-import { AuthInput } from '@/components/auth/auth-input';
+import { AuthInput, type AuthInputRef } from '@/components/auth/auth-input';
 import { GradientButton } from '@/components/ui/gradient-button';
+import { GRADIENT_COLORS } from '@/constants/theme';
 import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignupScreen() {
   const colors = useThemeColors();
+  const router = useRouter();
+  const { register } = useAuth();
+  const isDark = colors.background !== '#FFFFFF';
 
-  const gradientColors =
-    colors.background === '#FFFFFF'
-      ? ['#F5F3FF', '#EDE9FE', '#FFFFFF']
-      : ['#1a1730', '#0F0D23', '#0F0D23'];
+  const nameRef = useRef<AuthInputRef>(null);
+  const emailRef = useRef<AuthInputRef>(null);
+  const passwordRef = useRef<AuthInputRef>(null);
+  const confirmPasswordRef = useRef<AuthInputRef>(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    setError('');
+    const name = nameRef.current?.getValue()?.trim() ?? '';
+    const email = emailRef.current?.getValue()?.trim() ?? '';
+    const password = passwordRef.current?.getValue() ?? '';
+    const confirmPassword = confirmPasswordRef.current?.getValue() ?? '';
+    if (!name) {
+      setError('Name is required.');
+      return;
+    }
+    if (!email || !password) {
+      setError('Email and password are required.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    setLoading(true);
+    const { error: err } = await register({ name, email, password });
+    setLoading(false);
+    if (err) {
+      setError(err);
+      return;
+    }
+    router.replace('/');
+  };
+
+  const gradientColors: readonly [string, string, ...string[]] = isDark
+    ? ['#0F0D23', '#1a1730', '#0d0b1a']
+    : ['#FAF5FF', '#F3E8FF', '#EDE9FE', '#FFFFFF'];
 
   return (
     <LinearGradient colors={gradientColors} style={{ flex: 1 }}>
@@ -28,74 +72,135 @@ export default function SignupScreen() {
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          justifyContent: 'center',
           paddingHorizontal: 24,
-          paddingTop: 100,
-          paddingBottom: 40,
+          paddingTop: 40,
+          paddingBottom: 48,
         }}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}>
-        <AuthCard>
-          <Text
-            style={{
-              fontSize: 28,
-              fontWeight: '700',
-              color: colors.text,
-              marginBottom: 8,
-            }}>
-            Create your account
-          </Text>
-          <Text
-            style={{
-              fontSize: 16,
-              color: colors.textSecondary,
-              marginBottom: 24,
-            }}>
-            Sign up to get a higher daily upload limit.
-          </Text>
+        {/* Decorative icon – must not block touches */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 100,
+            left: 24,
+            width: 60,
+            height: 60,
+            opacity: 0.12,
+          }}>
+          <MaterialIcons name="person-add" size={60} color={GRADIENT_COLORS.start} />
+        </View>
 
-          <AuthInput label="Full name" placeholder="Your name" />
+        <AuthCard>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 14,
+                backgroundColor: `${GRADIENT_COLORS.start}22`,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+              <MaterialIcons name="person-add" size={26} color={GRADIENT_COLORS.start} />
+            </View>
+            <View>
+              <Text
+                style={{
+                  fontSize: 26,
+                  fontWeight: '800',
+                  color: colors.text,
+                  letterSpacing: -0.5,
+                }}>
+                Create account
+              </Text>
+              <Text
+                style={{
+                  fontSize: 15,
+                  color: colors.textSecondary,
+                  marginTop: 2,
+                }}>
+                Get a higher upload limit
+              </Text>
+            </View>
+          </View>
+
+          {error ? (
+            <View
+              style={{
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                padding: 12,
+                borderRadius: 12,
+                marginBottom: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+              }}>
+              <MaterialIcons name="error-outline" size={20} color="#DC2626" />
+              <Text style={{ fontSize: 14, color: '#DC2626', flex: 1 }}>{error}</Text>
+            </View>
+          ) : null}
+
           <AuthInput
+            ref={nameRef}
+            label="Full name"
+            placeholder="Your name"
+            defaultValue=""
+            leftIcon="person"
+          />
+          <AuthInput
+            ref={emailRef}
             label="Email"
             placeholder="you@example.com"
+            defaultValue=""
             keyboardType="email-address"
+            leftIcon="email"
           />
           <AuthInput
+            ref={passwordRef}
             label="Password"
             placeholder="••••••••"
+            defaultValue=""
             secureTextEntry
+            leftIcon="lock"
           />
           <AuthInput
-            label="Confirm"
+            ref={confirmPasswordRef}
+            label="Confirm password"
             placeholder="••••••••"
+            defaultValue=""
             secureTextEntry
+            leftIcon="lock"
           />
 
           <GradientButton
-            title="Create account"
+            title={loading ? 'Creating account…' : 'Create account'}
             icon="person-add"
             iconPosition="left"
-            onPress={() => {}}
+            onPress={handleSubmit}
+            disabled={loading}
           />
 
           <View
             style={{
               flexDirection: 'row',
               justifyContent: 'center',
-              marginTop: 24,
-              gap: 4,
+              marginTop: 28,
+              gap: 6,
             }}>
             <Text style={{ fontSize: 15, color: colors.textSecondary }}>
-              Already have an account?{' '}
+              Already have an account?
             </Text>
             <Link href="/(auth)/login" asChild>
               <Text
                 style={{
                   fontSize: 15,
-                  fontWeight: '600',
-                  color: colors.link,
+                  fontWeight: '700',
+                  color: GRADIENT_COLORS.start,
                 }}>
-                Login
+                Sign in
               </Text>
             </Link>
           </View>
