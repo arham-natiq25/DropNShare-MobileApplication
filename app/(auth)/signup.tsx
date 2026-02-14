@@ -7,6 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthCard } from '@/components/auth/auth-card';
 import { AuthHeader } from '@/components/auth/auth-header';
@@ -19,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function SignupScreen() {
   const colors = useThemeColors();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { register } = useAuth();
   const isDark = colors.background !== '#FFFFFF';
 
@@ -73,8 +75,8 @@ export default function SignupScreen() {
         contentContainerStyle={{
           flexGrow: 1,
           paddingHorizontal: 24,
-          paddingTop: 40,
-          paddingBottom: 48,
+          paddingTop: 100 + insets.top,
+          paddingBottom: 48 + insets.bottom,
         }}
         keyboardShouldPersistTaps="always"
         keyboardDismissMode="on-drag"

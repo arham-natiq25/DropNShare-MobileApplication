@@ -16,7 +16,14 @@ const extra = Constants.expoConfig?.extra as { apiUrl?: string } | undefined;
 // Use HTTPS. http:// causes redirect to https:// and that turns POST into GET → "GET method not supported".
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ||
-  'https://arhamnatiq.dropnsharee.com/api';
+  'https://dropnsharee.arhamnatiq.com/api';
+
+// Web frontend base URL (Vue app). Used for share/copy links so users open the web download page, not the API.
+// Set EXPO_PUBLIC_WEB_URL if your web app is on a different origin; otherwise derived from API (strip /api).
+const webUrl = process.env.EXPO_PUBLIC_WEB_URL;
+export const WEB_BASE_URL = typeof webUrl === 'string' && webUrl.length > 0
+  ? webUrl.replace(/\/$/, '')
+  : API_BASE_URL.replace(/\/api\/?$/, '');
 
 // Laravel api.php routes use no trailing slash. If you get 404, set to true.
 const API_USE_TRAILING_SLASH = false;
@@ -30,6 +37,7 @@ const LOG = (msg: string, data?: unknown) => {
 
 // Log resolved base URL at load (helps debug .env / app.json)
 LOG('API_BASE_URL', API_BASE_URL);
+LOG('WEB_BASE_URL (download page links)', WEB_BASE_URL);
 
 export async function getStoredToken(): Promise<string | null> {
   try {
@@ -139,6 +147,18 @@ async function request<T>(
 
 export type User = { id: number; name: string; email: string; email_verified_at?: string };
 
+/** Normalize user from API (handles snake_case from Laravel) and ensure display name */
+export function normalizeUser(raw: unknown): User | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+  const id = typeof o.id === 'number' ? o.id : Number(o.id);
+  if (Number.isNaN(id)) return null;
+  const name = (o.name ?? o.email ?? '') as string;
+  const email = (o.email ?? '') as string;
+  if (!email) return null;
+  return { id, name: String(name || email), email };
+}
+
 export type RegisterPayload = { name: string; email: string; password: string };
 export type LoginPayload = { email: string; password: string };
 
@@ -157,7 +177,18 @@ export async function apiLogin(payload: LoginPayload) {
     method: 'POST',
     body: payload,
   });
-  LOG('apiLogin result', { status: result.status, hasData: !!result.data, error: result.error });
+  const data = result.data as AuthResponse | undefined;
+  LOG('apiLogin result', {
+    status: result.status,
+    hasData: !!result.data,
+    hasToken: !!data?.token,
+    hasUser: !!data?.user,
+    userKeys: data?.user ? Object.keys(data.user) : [],
+    error: result.error,
+  });
+  if (result.error) LOG('apiLogin error (check status/error)', { status: result.status, error: result.error });
+  if (data && !data.user) LOG('apiLogin invalid response: missing user', data);
+  if (data && !data.token) LOG('apiLogin invalid response: missing token', data);
   return result;
 }
 
@@ -194,8 +225,12 @@ export async function apiUpload(files: { uri: string; name: string; type?: strin
   });
 }
 
-/** Returns the download URL for the zip (same as upload response). Open with Linking.openURL. */
+/** Returns the web frontend download page URL (e.g. https://yoursite.com/download/xxx.zip). Use for "Open download page" and "Copy link". */
+export function getDownloadPageUrl(filename: string): string {
+  return `${WEB_BASE_URL}/download/${filename}`;
+}
+
+/** Returns the backend API download URL (direct zip). Use only if you need to trigger download from the app. */
 export function getDownloadUrl(filename: string): string {
-  const base = API_BASE_URL.replace(/\/api\/?$/, '');
-  return `${base}/api/download/${filename}`;
+  return `${API_BASE_URL.replace(/\/$/, '')}/download/${filename}`;
 }

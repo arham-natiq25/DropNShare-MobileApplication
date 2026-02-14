@@ -2,7 +2,8 @@
  * AppSidebar - Overlay sidebar on the RIGHT, with close button
  */
 
-import { View, Text, Pressable } from 'react-native';
+import { useState } from 'react';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { Link } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -10,6 +11,7 @@ import { Logo } from '@/components/ui/logo';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { GRADIENT_COLORS } from '@/constants/theme';
+import { useAuth } from '@/contexts/AuthContext';
 
 type NavItem = {
   id: string;
@@ -27,13 +29,29 @@ type AppSidebarProps = {
 export function AppSidebar({ activeId = 'home', onClose }: AppSidebarProps) {
   const colors = useThemeColors();
   const isDark = colors.background !== '#FFFFFF';
+  const { user, isAuthenticated, logout } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  const navItems: NavItem[] = [
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    await logout();
+    setLoggingOut(false);
+    onClose();
+  };
+
+  const baseNavItems: NavItem[] = [
     { id: 'home', label: 'Home', icon: 'home', href: '/' },
     { id: 'upload', label: 'Upload', icon: 'cloud-upload', href: '/upload' },
-    { id: 'login', label: 'Login', icon: 'login', href: '/(auth)/login' },
-    { id: 'signup', label: 'Sign up', icon: 'person-add', href: '/(auth)/signup' },
   ];
+
+  const authNavItems: NavItem[] = isAuthenticated
+    ? [{ id: 'logout', label: 'Logout', icon: 'logout', onPress: handleLogout }]
+    : [
+        { id: 'login', label: 'Login', icon: 'login', href: '/(auth)/login' },
+        { id: 'signup', label: 'Sign up', icon: 'person-add', href: '/(auth)/signup' },
+      ];
+
+  const navItems = [...baseNavItems, ...authNavItems];
 
   return (
     <View
@@ -58,7 +76,7 @@ export function AppSidebar({ activeId = 'home', onClose }: AppSidebarProps) {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 32,
+          marginBottom: isAuthenticated && user ? 8 : 32,
         }}>
         <Logo size="sm" />
         <Pressable
@@ -72,6 +90,29 @@ export function AppSidebar({ activeId = 'home', onClose }: AppSidebarProps) {
           <MaterialIcons name="close" size={24} color={colors.text} />
         </Pressable>
       </View>
+      {isAuthenticated && user ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 24,
+            paddingVertical: 8,
+            paddingHorizontal: 4,
+          }}>
+          <MaterialIcons name="person" size={20} color={GRADIENT_COLORS.start} />
+          <Text
+            style={{
+              fontSize: 15,
+              fontWeight: '600',
+              color: colors.text,
+              flex: 1,
+            }}
+            numberOfLines={1}>
+            {user?.name ?? user?.email ?? 'User'}
+          </Text>
+        </View>
+      ) : null}
 
       {/* Nav buttons */}
       <View style={{ flex: 1, gap: 4 }}>
@@ -125,8 +166,23 @@ export function AppSidebar({ activeId = 'home', onClose }: AppSidebarProps) {
             <Pressable
               key={item.id}
               onPress={item.onPress}
+              disabled={item.id === 'logout' && loggingOut}
               style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
-              {content}
+              {item.id === 'logout' && loggingOut ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                  }}>
+                  <ActivityIndicator size="small" color={GRADIENT_COLORS.start} />
+                  <Text style={{ fontSize: 15, color: colors.textSecondary }}>Logging out…</Text>
+                </View>
+              ) : (
+                content
+              )}
             </Pressable>
           );
         })}

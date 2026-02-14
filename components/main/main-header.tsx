@@ -1,8 +1,9 @@
 /**
- * MainHeader - Header for landing page (Logo, Home, Upload, Login, Sign up, Theme toggle)
+ * MainHeader - Header for landing page (Logo, Home, Upload, user name / Login, Sign up, Theme toggle)
  */
 
-import { View, Text, Pressable } from 'react-native';
+import { useState } from 'react';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -10,10 +11,19 @@ import { Logo } from '@/components/ui/logo';
 import { GradientButton } from '@/components/ui/gradient-button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function MainHeader() {
   const colors = useThemeColors();
   const router = useRouter();
+  const { user, isAuthenticated, logout } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    await logout();
+    setLoggingOut(false);
+  };
 
   return (
     <View
@@ -41,7 +51,7 @@ export function MainHeader() {
             </Text>
           </Pressable>
         </Link>
-        <Pressable>
+        <Pressable onPress={() => router.push('/upload')}>
           <Text
             style={{
               fontSize: 14,
@@ -52,22 +62,53 @@ export function MainHeader() {
           </Text>
         </Pressable>
         <ThemeToggle size={22} />
-        <Link href="/(auth)/login" asChild>
-          <Pressable>
+        {isAuthenticated && user ? (
+          <>
             <Text
               style={{
                 fontSize: 14,
-                fontWeight: '500',
+                fontWeight: '600',
                 color: colors.text,
-              }}>
-              Login
+                maxWidth: 120,
+              }}
+              numberOfLines={1}>
+              {user?.name ?? user?.email ?? 'User'}
             </Text>
-          </Pressable>
-        </Link>
-        <GradientButton
-          title="Sign up"
-          onPress={() => router.push('/(auth)/signup')}
-        />
+            <Pressable onPress={handleLogout} disabled={loggingOut}>
+              {loggingOut ? (
+                <ActivityIndicator size="small" color={colors.text} />
+              ) : (
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '500',
+                    color: colors.text,
+                  }}>
+                  Logout
+                </Text>
+              )}
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Link href="/(auth)/login" asChild>
+              <Pressable>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '500',
+                    color: colors.text,
+                  }}>
+                  Login
+                </Text>
+              </Pressable>
+            </Link>
+            <GradientButton
+              title="Sign up"
+              onPress={() => router.push('/(auth)/signup')}
+            />
+          </>
+        )}
       </View>
     </View>
   );

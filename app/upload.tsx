@@ -1,13 +1,16 @@
 /**
- * Upload Screen - API-integrated: pick files → apiUpload → show/open download link
+ * Upload Screen - API-integrated: pick files → apiUpload → show/open download link.
+ * Works for guests (no login required). Shows file count, total size, copy link.
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
+import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
-import { ScrollView, Text, View, Pressable } from 'react-native';
+import { ScrollView, Text, View, Pressable, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { GradientButton } from '@/components/ui/gradient-button';
@@ -15,13 +18,22 @@ import { Logo } from '@/components/ui/logo';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { GRADIENT_COLORS } from '@/constants/theme';
-import { apiUpload } from '@/lib/api';
+import { apiUpload, getDownloadPageUrl } from '@/lib/api';
 
-type PickedFile = { uri: string; name: string; type?: string };
+type PickedFile = { uri: string; name: string; type?: string; size?: number };
+
+function formatBytes(bytes: number): string {
+  if (!bytes) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+}
 
 export default function UploadScreen() {
   const colors = useThemeColors();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const isDark = colors.background !== '#FFFFFF';
 
   const [files, setFiles] = useState<PickedFile[]>([]);
@@ -45,6 +57,7 @@ export default function UploadScreen() {
         uri: a.uri,
         name: a.name ?? 'file',
         type: a.mimeType ?? undefined,
+        size: (a as { size?: number }).size,
       }));
       setFiles((prev) => [...prev, ...newFiles]);
     } catch (e: any) {
@@ -55,6 +68,12 @@ export default function UploadScreen() {
   const removeFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
     setUploadError('');
+  };
+
+  const clearFiles = () => {
+    setFiles([]);
+    setUploadError('');
+    setDownloadUrl(null);
   };
 
   const handleUpload = async () => {
@@ -75,8 +94,35 @@ export default function UploadScreen() {
     }
   };
 
+  const totalSize = useMemo(
+    () => files.reduce((sum, f) => sum + (f.size ?? 0), 0),
+    [files]
+  );
+
+  const downloadFilename = useMemo(() => {
+    if (!downloadUrl) return '';
+    const parts = downloadUrl.split('/');
+    return parts[parts.length - 1] ?? '';
+  }, [downloadUrl]);
+
+  const copyableLink = useMemo(() => {
+    if (!downloadFilename) return '';
+    return getDownloadPageUrl(downloadFilename);
+  }, [downloadFilename]);
+
   const openDownload = () => {
-    if (downloadUrl) Linking.openURL(downloadUrl);
+    if (!copyableLink) return;
+    Linking.openURL(copyableLink);
+  };
+
+  const copyLink = async () => {
+    if (!copyableLink) return;
+    try {
+      await Clipboard.setStringAsync(copyableLink);
+      Alert.alert('Copied', 'Download link copied to clipboard.');
+    } catch {
+      Alert.alert('Copy failed', 'Could not copy the link.');
+    }
   };
 
   const gradientColors = isDark
@@ -92,7 +138,7 @@ export default function UploadScreen() {
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingHorizontal: 24,
-          paddingTop: 56,
+          paddingTop: Math.max(24, insets.top) + 24,
           paddingBottom: 24,
         }}>
         <Pressable
@@ -116,7 +162,7 @@ export default function UploadScreen() {
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 24,
-          paddingBottom: 56,
+          paddingBottom: 56 + insets.bottom,
           flexGrow: 1,
         }}
         showsVerticalScrollIndicator={false}>
@@ -237,26 +283,46 @@ export default function UploadScreen() {
             <Text
               style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 12 }}
               numberOfLines={2}>
-              {downloadUrl}
+              {copyableLink}
             </Text>
-            <Pressable
-              onPress={openDownload}
-              style={({ pressed }) => ({
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 8,
-                paddingVertical: 10,
-                paddingHorizontal: 16,
-                borderRadius: 12,
-                backgroundColor: `${GRADIENT_COLORS.start}22`,
-                alignSelf: 'flex-start',
-                opacity: pressed ? 0.8 : 1,
-              })}>
-              <MaterialIcons name="open-in-new" size={18} color={GRADIENT_COLORS.start} />
-              <Text style={{ fontSize: 14, fontWeight: '600', color: GRADIENT_COLORS.start }}>
-                Open download link
-              </Text>
-            </Pressable>
+            <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+              <Pressable
+                onPress={openDownload}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  paddingVertical: 10,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  backgroundColor: `${GRADIENT_COLORS.start}22`,
+                  opacity: pressed ? 0.8 : 1,
+                })}>
+                <MaterialIcons name="open-in-new" size={18} color={GRADIENT_COLORS.start} />
+                <Text style={{ fontSize: 14, fontWeight: '600', color: GRADIENT_COLORS.start }}>
+                  Open download page
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={copyLink}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  paddingVertical: 10,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: isDark ? 'rgba(75, 85, 99, 0.5)' : 'rgba(0,0,0,0.12)',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                  opacity: pressed ? 0.8 : 1,
+                })}>
+                <MaterialIcons name="content-copy" size={18} color={colors.text} />
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>
+                  Copy link
+                </Text>
+              </Pressable>
+            </View>
           </View>
         ) : null}
 
@@ -289,7 +355,9 @@ export default function UploadScreen() {
                 Your files
               </Text>
               <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 2 }}>
-                {files.length > 0 ? `${files.length} file(s) added` : 'Added files appear here'}
+                {files.length > 0
+                  ? `${files.length} file(s)${totalSize > 0 ? ` • ${formatBytes(totalSize)}` : ''}`
+                  : 'Added files appear here'}
               </Text>
             </View>
           </View>
@@ -325,11 +393,18 @@ export default function UploadScreen() {
                   }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
                     <MaterialIcons name="insert-drive-file" size={22} color={colors.textMuted} />
-                    <Text
-                      style={{ fontSize: 14, color: colors.text, flex: 1 }}
-                      numberOfLines={1}>
-                      {f.name}
-                    </Text>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={{ fontSize: 14, color: colors.text }}
+                        numberOfLines={1}>
+                        {f.name}
+                      </Text>
+                      {f.size != null && f.size > 0 ? (
+                        <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+                          {formatBytes(f.size)}
+                        </Text>
+                      ) : null}
+                    </View>
                   </View>
                   <Pressable
                     onPress={() => removeFile(i)}
@@ -346,14 +421,32 @@ export default function UploadScreen() {
           )}
         </View>
 
-        <GradientButton
-          title={uploading ? 'Uploading…' : 'Get share link'}
-          icon="link"
-          iconPosition="left"
-          onPress={handleUpload}
-          disabled={uploading || files.length === 0}
-          style={{ width: '100%' }}
-        />
+        <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+          <Pressable
+            onPress={clearFiles}
+            disabled={uploading}
+            style={({ pressed }) => ({
+              flex: 1,
+              paddingVertical: 16,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(75, 85, 99, 0.5)' : colors.cardBorder,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: pressed ? 0.8 : 1,
+            })}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Clear</Text>
+          </Pressable>
+          <GradientButton
+            title={uploading ? 'Uploading…' : 'Upload files'}
+            icon={uploading ? undefined : 'link'}
+            iconPosition="left"
+            onPress={handleUpload}
+            disabled={uploading || files.length === 0}
+            style={{ flex: 1 }}
+          />
+        </View>
       </ScrollView>
     </LinearGradient>
   );

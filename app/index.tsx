@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { ScrollView, Text, View, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -27,6 +28,7 @@ const ANIM_DURATION = 280;
 export default function LandingPage() {
   const colors = useThemeColors();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const isDark = colors.background !== '#FFFFFF';
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebarTranslate = useSharedValue(SIDEBAR_WIDTH);
@@ -72,7 +74,7 @@ export default function LandingPage() {
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingHorizontal: 24,
-            paddingTop: 56,
+            paddingTop: Math.max(16, insets.top) + 16,
             paddingBottom: 16,
           }}>
           <Logo size="sm" />
@@ -92,7 +94,7 @@ export default function LandingPage() {
           style={{ flex: 1 }}
           contentContainerStyle={{
             paddingHorizontal: 32,
-            paddingBottom: 48,
+            paddingBottom: 48 + insets.bottom,
             paddingTop: 8,
           }}
           showsVerticalScrollIndicator={false}>

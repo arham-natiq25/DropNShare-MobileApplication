@@ -12,6 +12,7 @@ import {
   apiLogin,
   apiRegister,
   apiLogout,
+  normalizeUser,
   type LoginPayload,
   type RegisterPayload,
 } from '@/lib/api';
@@ -39,7 +40,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     const res = await apiMe();
-    if (res.data?.user) setUser(res.data.user);
+    const normalized = res.data?.user != null ? normalizeUser(res.data.user) : null;
+    if (normalized) setUser(normalized);
     else {
       await setStoredToken(null);
       setUser(null);
@@ -55,8 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const res = await apiMe();
+      const normalized = res.data?.user != null ? normalizeUser(res.data.user) : null;
       if (!cancelled) {
-        if (res.data?.user) setUser(res.data.user);
+        if (normalized) setUser(normalized);
         else {
           await setStoredToken(null);
           setUser(null);
@@ -73,10 +76,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (payload: LoginPayload) => {
     const res = await apiLogin(payload);
     if (res.error) return { error: res.error };
-    if (res.data?.token && res.data?.user) {
-      await setStoredToken(res.data.token);
-      setUser(res.data.user);
+    const token = (res.data as { token?: string })?.token;
+    const rawUser = (res.data as { user?: unknown })?.user;
+    const userObj = rawUser != null ? normalizeUser(rawUser) : null;
+    if (token && userObj) {
+      await setStoredToken(token);
+      setUser(userObj);
       return {};
+    }
+    if (__DEV__) {
+      console.warn('[Auth] Login invalid response: expected { token, user }', {
+        hasData: !!res.data,
+        hasToken: !!token,
+        hasUser: !!userObj,
+        keys: res.data ? Object.keys(res.data as object) : [],
+      });
     }
     return { error: 'Invalid response' };
   }, []);
@@ -84,9 +98,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = useCallback(async (payload: RegisterPayload) => {
     const res = await apiRegister(payload);
     if (res.error) return { error: res.error };
-    if (res.data?.token && res.data?.user) {
-      await setStoredToken(res.data.token);
-      setUser(res.data.user);
+    const token = (res.data as { token?: string })?.token;
+    const rawUser = (res.data as { user?: unknown })?.user;
+    const userObj = rawUser != null ? normalizeUser(rawUser) : null;
+    if (token && userObj) {
+      await setStoredToken(token);
+      setUser(userObj);
       return {};
     }
     return { error: 'Invalid response' };
@@ -94,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     await apiLogout();
+    await setStoredToken(null);
     setUser(null);
   }, []);
 

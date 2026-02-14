@@ -1,24 +1,27 @@
+
 /**
  * Login Screen - API-integrated. Uses uncontrolled inputs (refs) so keyboard stays open on mobile.
  */
 
-import { useRef, useState } from 'react';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
+import { useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthCard } from '@/components/auth/auth-card';
 import { AuthHeader } from '@/components/auth/auth-header';
 import { AuthInput, type AuthInputRef } from '@/components/auth/auth-input';
 import { GradientButton } from '@/components/ui/gradient-button';
-import { useThemeColors } from '@/hooks/use-theme-colors';
 import { GRADIENT_COLORS } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 
 export default function LoginScreen() {
   const colors = useThemeColors();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { login } = useAuth();
   const isDark = colors.background !== '#FFFFFF';
 
@@ -59,8 +62,8 @@ export default function LoginScreen() {
         contentContainerStyle={{
           flexGrow: 1,
           paddingHorizontal: 24,
-          paddingTop: 40,
-          paddingBottom: 48,
+          paddingTop: 100 + insets.top,
+          paddingBottom: 48 + insets.bottom,
         }}
         keyboardShouldPersistTaps="always"
         keyboardDismissMode="on-drag"
