@@ -3,21 +3,21 @@
  * Works for guests (no login required). Shows file count, total size, copy link.
  */
 
-import { useState, useMemo } from 'react';
-import * as DocumentPicker from 'expo-document-picker';
-import * as Clipboard from 'expo-clipboard';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import * as Linking from 'expo-linking';
-import { ScrollView, Text, View, Pressable, Alert } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as Clipboard from 'expo-clipboard';
+import * as DocumentPicker from 'expo-document-picker';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Linking from 'expo-linking';
+import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GradientButton } from '@/components/ui/gradient-button';
 import { Logo } from '@/components/ui/logo';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { useThemeColors } from '@/hooks/use-theme-colors';
 import { GRADIENT_COLORS } from '@/constants/theme';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import { apiUpload, getDownloadPageUrl } from '@/lib/api';
 
 type PickedFile = { uri: string; name: string; type?: string; size?: number };
@@ -213,7 +213,7 @@ export default function UploadScreen() {
           icon="add-circle-outline"
           iconPosition="left"
           onPress={pickFiles}
-          style={{ width: '100%', marginBottom: 20 }}
+          style={{ width: '100%', marginBottom: 25 }}
         />
 
         {/* Drop zone - also opens document picker */}
@@ -230,6 +230,7 @@ export default function UploadScreen() {
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: 28,
+            marginTop: 20,
             opacity: pressed ? 0.92 : 1,
             shadowColor: GRADIENT_COLORS.start,
             shadowOffset: { width: 0, height: 8 },
@@ -237,12 +238,14 @@ export default function UploadScreen() {
             shadowRadius: 24,
             elevation: 4,
           })}>
-          <MaterialIcons name="folder-open" size={36} color={GRADIENT_COLORS.start} style={{ marginBottom: 12 }} />
+          <MaterialIcons name="folder-open" size={46} color={GRADIENT_COLORS.start} style={{ marginBottom: 12, marginTop: 10 , alignSelf: 'center' }} />
           <Text
             style={{
               fontSize: 16,
               fontWeight: '600',
               color: colors.textSecondary,
+              marginBottom: 10,
+              textAlign: 'center',
             }}>
             Or tap here to add more files
           </Text>
@@ -436,17 +439,17 @@ export default function UploadScreen() {
               justifyContent: 'center',
               opacity: pressed ? 0.8 : 1,
             })}>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Clear</Text>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text , marginBottom: 10 }}>Clear</Text>
           </Pressable>
+        </View>
           <GradientButton
             title={uploading ? 'Uploading…' : 'Upload files'}
             icon={uploading ? undefined : 'link'}
             iconPosition="left"
             onPress={handleUpload}
+            style={{ width: '100%' , marginTop: 20 }}
             disabled={uploading || files.length === 0}
-            style={{ flex: 1 }}
           />
-        </View>
       </ScrollView>
     </LinearGradient>
   );
